@@ -16,6 +16,12 @@ export const USERS = [
     username: 'viewer',
     passwordHash: bcrypt.hashSync('user123', 10),  // Password: user123
     role: 'user',
+  },  
+  {
+    id: '3',
+    username: 'developer',
+    passwordHash: bcrypt.hashSync('dev123', 10),  // Password: dev123
+    role: 'developer',
   },
 ];
 
