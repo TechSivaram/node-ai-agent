@@ -620,9 +620,8 @@ This project is licensed under the ISC License.
 Before pushing to GitHub:
 
 1. Create a new repository on GitHub
-2. A `.gitignore` file is already included to exclude `node_modules` and development files
-3. Make sure to **commit `package-lock.json`** to ensure consistent dependency versions across installations
-4. Run the git commands to push the project
+2. A `.gitignore` file is already included to exclude `node_modules`, `package-lock.json`, and development files
+3. Run the git commands to push the project
 
 Example:
 
@@ -636,8 +635,7 @@ git push -u origin main
 ```
 
 The project will be ready with:
-- ✅ `package-lock.json` - Ensures reproducible builds
-- ✅ `.gitignore` - Excludes `node_modules`, logs, and environment files
+- ✅ `.gitignore` - Excludes `node_modules`, `package-lock.json`, logs, and environment files
 - ✅ All source code and configuration files
 
 ## 🤝 Contributing
