@@ -238,10 +238,12 @@ http://localhost:3000
 ```text
 node-ai-agent/
 ├── server.js
+├── auth.js
+├── tools/
+│   └── registry.js
 ├── public/
 │   └── index.html
 ├── package.json
-├── package-lock.json
 └── README.md
 ```
 
@@ -358,15 +360,19 @@ In the browser, after logging in:
 
 ## 🛠️ Adding Custom Tools
 
-This project is designed to be extended with additional local tools. A custom tool generally follows a simple pattern:
+This project is designed to be extended with additional local tools. Tools are defined in [tools/registry.js](tools/registry.js).
 
-1. Add a function to the `toolsRegistry` that accepts `(args, user)` parameters
-2. Register the function schema in the `tools` array
+A custom tool generally follows a simple pattern:
+
+1. Add a function to the `toolsRegistry` in [tools/registry.js](tools/registry.js) that accepts `(args, user)` parameters
+2. Register the function schema in the `tools` array in the same file
 3. Implement role-based authorization checks using the `user` object (contains `id`, `username`, `role`)
 4. Make sure the tool returns JSON-serializable data
 5. Write a clear description so the model knows when to use it
 
 ### Example: Add a file listing tool with role checks
+
+Edit [tools/registry.js](tools/registry.js) and add to the `toolsRegistry`:
 
 ```js
 const toolsRegistry = {
@@ -399,7 +405,7 @@ const toolsRegistry = {
 };
 ```
 
-Then register its schema so Ollama can call it:
+Then add the schema to the `tools` array in [tools/registry.js](tools/registry.js) so Ollama can call it:
 
 ```js
 const tools = [
@@ -614,8 +620,9 @@ This project is licensed under the ISC License.
 Before pushing to GitHub:
 
 1. Create a new repository on GitHub
-2. Run the git commands to push the project
-3. Optionally add a `.gitignore` to exclude `node_modules` and other local files
+2. A `.gitignore` file is already included to exclude `node_modules` and development files
+3. Make sure to **commit `package-lock.json`** to ensure consistent dependency versions across installations
+4. Run the git commands to push the project
 
 Example:
 
@@ -627,6 +634,11 @@ git branch -M main
 git remote add origin <your-github-repository-url>
 git push -u origin main
 ```
+
+The project will be ready with:
+- ✅ `package-lock.json` - Ensures reproducible builds
+- ✅ `.gitignore` - Excludes `node_modules`, logs, and environment files
+- ✅ All source code and configuration files
 
 ## 🤝 Contributing
 

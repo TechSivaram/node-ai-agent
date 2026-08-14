@@ -1,6 +1,7 @@
 import express from 'express';
 import ollama from 'ollama';
 import { authenticateToken, handleLogin, USERS } from './auth.js';
+import { toolsRegistry, tools } from './tools/registry.js';
 
 const app = express();
 const PORT = 3000;
@@ -10,74 +11,7 @@ app.post('/api/login', handleLogin);
 //app.use(authenticateToken);
 app.use(express.static('public'));
 
-// 1. Tool Implementations (Local JavaScript execution)
-const toolsRegistry = {
-  getSystemMetrics: async (args, user) => {
-    return { cpuUsage: 42, memoryUsage: '3.2GB / 16GB', status: 'Healthy' };
-  },
-
-  restartService: async (args, user) => {
-    // Role-based authorization check
-    if (user.role !== 'admin') {
-      return {
-        error: `Permission Denied: User '${user.username}' (${user.role}) cannot restart services.`,
-      };
-    }
-
-    const serviceName = typeof args === 'string' ? args : args?.serviceName;
-    return {
-      service: serviceName,
-      status: 'restarted',
-      timestamp: new Date().toISOString(),
-    };
-  },
-};
-
-const tools = [
-  {
-    type: 'function',
-    function: {
-      name: 'getSystemMetrics',
-      description: 'Get current system CPU and memory metrics.',
-      parameters: { type: 'object', properties: {} },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'restartService',
-      description: 'Restart a named system service (Admin only).',
-      parameters: {
-        type: 'object',
-        properties: {
-          serviceName: {
-            type: 'string',
-            description: "Name of the service to restart (e.g., 'redis').",
-          },
-        },
-        required: ['serviceName'],
-      },
-    },
-  },
-];
-
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = USERS.find((u) => u.username === username);
-
-  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
-    return res.status(401).json({ error: 'Invalid username or password' });
-  }
-
-  // Issue JWT Token containing user identity and role
-  const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '8h' }
-  );
-
-  res.json({ token, role: user.role, username: user.username });
-});
+// 1. Tool Implementations moved to lib/tools.js
 
 // 3. Streaming Chat Endpoint (SSE)
 app.post('/api/chat', authenticateToken, async (req, res) => {
