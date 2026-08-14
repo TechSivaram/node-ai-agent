@@ -634,6 +634,6 @@ Pull requests are welcome. If you improve tool handling, add more local tools, o
 
 ## 📸 Screenshot
 
-![alt text](image-1.png)
+![alt text](assets/image-1.png)
 
-![alt text](image-2.png)
+![alt text](assets/image-2.png)
