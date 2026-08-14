@@ -1,48 +1,58 @@
 import express from 'express';
 import ollama from 'ollama';
+import { authenticateToken, handleLogin, USERS } from './auth.js';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.post('/api/login', handleLogin);
+//app.use(authenticateToken);
 app.use(express.static('public'));
 
 // 1. Tool Implementations (Local JavaScript execution)
 const toolsRegistry = {
-  getSystemMetrics: async () => {
-    return { cpuUsage: 42, memoryUsage: "3.2GB / 16GB", status: "Healthy" };
+  getSystemMetrics: async (args, user) => {
+    return { cpuUsage: 42, memoryUsage: '3.2GB / 16GB', status: 'Healthy' };
   },
-  restartService: async (args) => {
-    // Defensive parsing for local model parameter outputs
+
+  restartService: async (args, user) => {
+    // Role-based authorization check
+    if (user.role !== 'admin') {
+      return {
+        error: `Permission Denied: User '${user.username}' (${user.role}) cannot restart services.`,
+      };
+    }
+
     const serviceName = typeof args === 'string' ? args : args?.serviceName;
-    return { service: serviceName, status: "restarted", timestamp: new Date().toISOString() };
-  }
+    return {
+      service: serviceName,
+      status: 'restarted',
+      timestamp: new Date().toISOString(),
+    };
+  },
 };
 
-// 2. Schema Declarations (OpenAI Function format)
 const tools = [
   {
     type: 'function',
     function: {
       name: 'getSystemMetrics',
       description: 'Get current system CPU and memory metrics.',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+      parameters: { type: 'object', properties: {} },
     },
   },
   {
     type: 'function',
     function: {
       name: 'restartService',
-      description: 'Restart a named system service when needed.',
+      description: 'Restart a named system service (Admin only).',
       parameters: {
         type: 'object',
         properties: {
           serviceName: {
             type: 'string',
-            description: "Name of the service to restart (e.g., 'redis', 'postgres').",
+            description: "Name of the service to restart (e.g., 'redis').",
           },
         },
         required: ['serviceName'],
@@ -51,9 +61,28 @@ const tools = [
   },
 ];
 
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = USERS.find((u) => u.username === username);
+
+  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+
+  // Issue JWT Token containing user identity and role
+  const token = jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  res.json({ token, role: user.role, username: user.username });
+});
+
 // 3. Streaming Chat Endpoint (SSE)
-app.post('/api/chat', async (req, res) => {
-  const { prompt } = req.body;
+app.post('/api/chat', authenticateToken, async (req, res) => {
+  const { prompt, history = [] } = req.body;
+  const currentUser = req.user;
 
   // Set SSE Headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -64,14 +93,10 @@ app.post('/api/chat', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type, payload })}\n\n`);
   };
 
-  const SYSTEM_PROMPT = `You are a helpful AI system assistant.
-You have access to tools. Use tools only when required to fulfill the user's prompt.
-When no tool is needed or after reviewing tool output, provide a clear answer in proper format.`;
+  const SYSTEM_PROMPT = `You are an AI assistant for user '${currentUser.username}' (Role: ${currentUser.role}). Use tools when required.`;
 
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: prompt }
-  ];
+  let messages = history.length > 0 ? history : [{ role: 'system', content: SYSTEM_PROMPT }];
+  messages.push({ role: 'user', content: prompt });
 
   let turns = 0;
   const MAX_TURNS = 5;
@@ -111,7 +136,7 @@ When no tool is needed or after reviewing tool output, provide a clear answer in
           result = { error: `Tool '${name}' not recognized.` };
         } else {
           try {
-            result = await fn(args);
+            result = await fn(args, currentUser);
           } catch (err) {
             result = { error: err.message };
           }

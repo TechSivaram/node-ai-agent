@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Local AI Agent Web Console</title>
 
-  <!-- 1. Markdown Parser & Code Syntax Highlighting via CDN -->
+  <!-- Markdown Parser & Code Syntax Highlighting -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -21,12 +21,71 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg-color);
       color: var(--text-main);
       max-width: 900px;
       margin: 40px auto;
       padding: 0 20px;
+    }
+
+    /* LOGIN SCREEN - Visible by default */
+    #login-view {
+      display: block;
+      background: var(--chat-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      margin: 80px auto;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #0f172a;
+      color: white;
+      box-sizing: border-box;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: var(--user-msg);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .login-error {
+      color: #fecaca;
+      background: #7f1d1d;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    /* CHAT CONSOLE - Hidden until login succeeds */
+    #chat-view { 
+      display: none; 
     }
 
     .header-container {
@@ -36,25 +95,25 @@
       margin-bottom: 20px;
     }
 
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 600;
+    .user-badge {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      background: #0f172a;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
     }
 
-    .btn-clear {
+    .btn-action {
       background: #dc2626;
       color: white;
       border: none;
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.85rem;
       font-weight: 600;
-    }
-
-    .btn-clear:hover {
-      background: #b91c1c;
+      margin-left: 8px;
     }
 
     #chat {
@@ -62,7 +121,7 @@
       border-radius: 12px;
       padding: 24px;
       min-height: 450px;
-      max-height: 650px;
+      max-height: 600px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -79,165 +138,141 @@
       font-size: 0.95rem;
     }
 
-    .user {
-      background: var(--user-msg);
-      align-self: flex-end;
-      color: white;
-      white-space: pre-wrap;
-    }
+    .user { background: var(--user-msg); align-self: flex-end; color: white; white-space: pre-wrap; }
+    .agent { background: var(--agent-msg); border: 1px solid var(--border-color); align-self: flex-start; color: #e2e8f0; width: 90%; }
+    .action { background: #451a03; color: #fef08a; font-family: monospace; font-size: 0.85em; align-self: flex-start; }
+    .action-output { background: #064e3b; color: #a7f3d0; font-family: monospace; font-size: 0.85em; align-self: flex-start; }
+    .error { background: #7f1d1d; color: #fecaca; align-self: flex-start; }
 
-    .agent {
-      background: var(--agent-msg);
-      border: 1px solid var(--border-color);
-      align-self: flex-start;
-      color: #e2e8f0;
-      width: 90%;
-    }
-
-    .action {
-      background: #451a03;
-      color: #fef08a;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.85em;
-      align-self: flex-start;
-      border: 1px solid #78350f;
-    }
-
-    .action-output {
-      background: #064e3b;
-      color: #a7f3d0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.85em;
-      align-self: flex-start;
-      border: 1px solid #065f46;
-    }
-
-    .error {
-      background: #7f1d1d;
-      color: #fecaca;
-      align-self: flex-start;
-    }
-
-    /* Markdown Engine Styling Inside Agent Messages */
     .markdown-body p { margin: 0 0 12px 0; }
-    .markdown-body p:last-child { margin-bottom: 0; }
-    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-      margin: 16px 0 8px 0;
-      font-weight: 600;
-      color: #fff;
-    }
-    .markdown-body ul, .markdown-body ol {
-      margin: 0 0 12px 0;
-      padding-left: 24px;
-    }
-    .markdown-body li { margin-bottom: 4px; }
-    .markdown-body code:not(pre code) {
-      background: #0f172a;
-      color: #38bdf8;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: ui-monospace, SFMono-Regular, monospace;
-      font-size: 0.88em;
-    }
-    .markdown-body pre {
-      background: #090d16 !important;
-      padding: 14px;
-      border-radius: 8px;
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      margin: 12px 0;
-    }
-    .markdown-body pre code {
-      background: transparent !important;
-      padding: 0;
-      font-size: 0.88em;
-    }
-    .markdown-body table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 12px 0;
-    }
-    .markdown-body th, .markdown-body td {
-      border: 1px solid var(--border-color);
-      padding: 8px 12px;
-      text-align: left;
-    }
-    .markdown-body th { background: #0f172a; }
+    .markdown-body pre { background: #090d16 !important; padding: 14px; border-radius: 8px; overflow-x: auto; }
 
     .input-box { display: flex; gap: 10px; margin-top: 20px; }
-    input {
-      flex: 1;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background: var(--chat-bg);
-      color: white;
-      font-size: 1rem;
-    }
-    input:focus { outline: 2px solid var(--user-msg); }
-    button.btn-send {
-      padding: 12px 24px;
-      background: var(--user-msg);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button.btn-send:hover { background: #1d4ed8; }
+    .input-box input { flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--chat-bg); color: white; }
+    .btn-send { padding: 12px 24px; background: var(--user-msg); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
   </style>
 </head>
 <body>
 
-  <div class="header-container">
-    <h2>🤖 Local AI Agent Console (`llama3.2`)</h2>
-    <button class="btn-clear" onclick="clearClientMemory()">Clear Memory</button>
+  <!-- 1. LOGIN SCREEN -->
+  <div id="login-view">
+    <h2 style="margin-top: 0; text-align: center;">🔐 Login</h2>
+    <div id="login-error" class="login-error"></div>
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="admin or viewer" required />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="admin123 or user123" required />
+      </div>
+      <button type="submit" class="btn-login">Sign In</button>
+    </form>
   </div>
 
-  <div id="chat"></div>
+  <!-- 2. CHAT CONSOLE -->
+  <div id="chat-view">
+    <div class="header-container">
+      <h2>🤖 NodeAgent Console</h2>
+      <div>
+        <span id="user-badge" class="user-badge"></span>
+        <button class="btn-action" style="background: #475569;" onclick="clearClientMemory()">Clear Memory</button>
+        <button class="btn-action" onclick="logout()">Logout</button>
+      </div>
+    </div>
 
-  <div class="input-box">
-    <input 
-      type="text" 
-      id="prompt" 
-      placeholder="Ask a question or request a system action..." 
-      onkeydown="if(event.key === 'Enter') sendPrompt()"
-    />
-    <button class="btn-send" onclick="sendPrompt()">Send</button>
+    <div id="chat"></div>
+
+    <div class="input-box">
+      <input type="text" id="prompt" placeholder="Ask a question or request an action..." onkeydown="if(event.key === 'Enter') sendPrompt()" />
+      <button class="btn-send" onclick="sendPrompt()">Send</button>
+    </div>
   </div>
 
   <script>
-    // 1. Configure Marked.js for Code Highlighting
-    marked.setOptions({
-      highlight: function(code, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-          return hljs.highlight(code, { language: lang }).value;
-        }
-        return hljs.highlightAuto(code).value;
-      },
-      breaks: true
-    });
+    // Safe initialization
+    if (typeof marked !== 'undefined') {
+      marked.setOptions({ breaks: true });
+    }
 
-    // 2. Load Existing Memory from Browser's localStorage
     let conversationHistory = JSON.parse(localStorage.getItem('agent_history') || '[]');
 
-    window.onload = () => {
+    // Check token on initial load
+    document.addEventListener('DOMContentLoaded', () => {
+      debugger;
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        showChatInterface();
+      } else {
+        showLoginInterface();
+      }
+    });
+
+    function showLoginInterface() {
+      document.getElementById('login-view').style.display = 'block';
+      document.getElementById('chat-view').style.display = 'none';
+    }
+
+    function showChatInterface() {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('chat-view').style.display = 'block';
+
+      const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+      document.getElementById('user-badge').innerText = `👤 ${user.username || 'User'} (${user.role || 'role'})`;
+
       renderHistoryUI();
-    };
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('login-error');
+
+      errorDiv.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.token) {
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('auth_user', JSON.stringify({ username: data.username, role: data.role }));
+          showChatInterface();
+        } else {
+          errorDiv.innerText = data.error || 'Login failed';
+          errorDiv.style.display = 'block';
+        }
+      } catch (err) {
+        errorDiv.innerText = 'Connection error. Check server.';
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      showLoginInterface();
+    }
 
     function renderHistoryUI() {
       const chat = document.getElementById('chat');
       chat.innerHTML = '';
-      
       for (const msg of conversationHistory) {
         if (msg.role === 'user') {
           chat.innerHTML += `<div class="msg user">${escapeHtml(msg.content)}</div>`;
         } else if (msg.role === 'assistant' && msg.content) {
-          const formattedHtml = marked.parse(msg.content);
+          const formattedHtml = typeof marked !== 'undefined' ? marked.parse(msg.content) : msg.content;
           chat.innerHTML += `<div class="msg agent markdown-body">💡 ${formattedHtml}</div>`;
         }
       }
-      hljs.highlightAll();
+      if (typeof hljs !== 'undefined') hljs.highlightAll();
       chat.scrollTop = chat.scrollHeight;
     }
 
@@ -245,23 +280,31 @@
       const input = document.getElementById('prompt');
       const chat = document.getElementById('chat');
       const prompt = input.value.trim();
-      if (!prompt) return;
+      const token = localStorage.getItem('auth_token');
 
-      // Render User Message directly into DOM
+      if (!prompt || !token) return;
+
       chat.innerHTML += `<div class="msg user">${escapeHtml(prompt)}</div>`;
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
 
-      // Client-Side Context Slicing: Only send the last 10 messages to keep request payload bounded
-      const MAX_HISTORY_TURNS = 10;
-      const trimmedHistory = conversationHistory.slice(-MAX_HISTORY_TURNS);
+      const trimmedHistory = conversationHistory.slice(-10);
 
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ prompt, history: trimmedHistory })
         });
+
+        if (response.status === 401 || response.status === 403) {
+          alert('Session expired. Please log in again.');
+          logout();
+          return;
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -280,17 +323,16 @@
             } else if (type === 'action_output') {
               chat.innerHTML += `<div class="msg action-output">📦 ${escapeHtml(payload)}</div>`;
             } else if (type === 'message') {
-              const formattedHtml = marked.parse(payload);
+              const formattedHtml = typeof marked !== 'undefined' ? marked.parse(payload) : payload;
               chat.innerHTML += `<div class="msg agent markdown-body">💡 ${formattedHtml}</div>`;
             } else if (type === 'history_update') {
-              // 3. Store updated memory array back into localStorage
               conversationHistory = payload;
               localStorage.setItem('agent_history', JSON.stringify(conversationHistory));
             } else if (type === 'error') {
               chat.innerHTML += `<div class="msg error">❌ ${escapeHtml(payload)}</div>`;
             }
 
-            hljs.highlightAll();
+            if (typeof hljs !== 'undefined') hljs.highlightAll();
             chat.scrollTop = chat.scrollHeight;
           }
         }
