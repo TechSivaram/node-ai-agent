@@ -72,7 +72,7 @@ Clone the repository and install dependencies:
 
 ```bash
 git clone <your-repository-url>
-cd NodeAgent
+cd node-ai-agent
 npm install
 ```
 
@@ -93,7 +93,7 @@ http://localhost:3000
 ## 🗂️ Project Structure
 
 ```text
-NodeAgent/
+node-ai-agent/
 ├── server.js
 ├── public/
 │   └── index.html
