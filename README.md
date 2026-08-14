@@ -240,7 +240,8 @@ node-ai-agent/
 ├── server.js
 ├── auth.js
 ├── tools/
-│   └── registry.js
+│   ├── registry.js       (tool implementations)
+│   └── permissions.js    (role-based permissions)
 ├── public/
 │   └── index.html
 ├── assets/
@@ -361,6 +362,67 @@ In the browser, after logging in:
 - **Invalid/expired token:** Returns `403 Forbidden`
 - **Insufficient permissions for tool:** Tool returns permission denied error
 
+## 🔑 Managing Role Permissions
+
+All role-based permissions are centrally managed in [tools/permissions.js](tools/permissions.js). This makes it easy to:
+- Add new roles
+- Grant/revoke tool access for specific roles
+- View which roles can access which tools
+
+### Current Role Configuration
+
+| Role | Access Level | Accessible Tools |
+|------|---|---|
+| **admin** | Full Access | `getSystemMetrics`, `restartService` |
+| **user** | Limited | `getSystemMetrics` |
+| **developer** | Medium | `getSystemMetrics`, `listDirectory` |
+| **viewer** | Read-Only | `getSystemMetrics` |
+
+### How to Add/Update Roles
+
+Edit [tools/permissions.js](tools/permissions.js) and update the `ROLE_PERMISSIONS` object:
+
+```javascript
+export const ROLE_PERMISSIONS = {
+  admin: {
+    tools: ['getSystemMetrics', 'restartService'],
+    description: 'Full access to all tools and operations',
+  },
+  developer: {
+    tools: ['getSystemMetrics', 'listDirectory'],
+    description: 'Access to system metrics and file browsing',
+  },
+  // Add your custom role here
+  poweruser: {
+    tools: ['getSystemMetrics', 'restartService', 'listDirectory'],
+    description: 'Power user with broad access',
+  },
+};
+```
+
+Then, create a user with this role in [auth.js](auth.js):
+
+```javascript
+export const USERS = [
+  {
+    id: '3',
+    username: 'poweruser',
+    passwordHash: bcrypt.hashSync('password123', 10),
+    role: 'poweruser',
+  },
+  // ... other users
+];
+```
+
+### Utility Functions
+
+Use these helper functions from `tools/permissions.js`:
+
+- **`hasToolPermission(userRole, toolName)`** - Check if a role can access a tool
+- **`getAccessibleTools(userRole)`** - Get all tools accessible to a role
+- **`createPermissionDeniedError(username, userRole, toolName)`** - Generate permission error response
+
+Tools automatically use `hasToolPermission()` to enforce access control without needing manual checks in each tool.
 
 ## 🛠️ Adding Custom Tools
 
@@ -368,68 +430,65 @@ This project is designed to be extended with additional local tools. Tools are d
 
 A custom tool generally follows a simple pattern:
 
-1. Add a function to the `toolsRegistry` in [tools/registry.js](tools/registry.js) that accepts `(args, user)` parameters
-2. Register the function schema in the `tools` array in the same file
-3. Implement role-based authorization checks using the `user` object (contains `id`, `username`, `role`)
-4. Make sure the tool returns JSON-serializable data
-5. Write a clear description so the model knows when to use it
+1. **Add the tool function** to `toolsRegistry` in [tools/registry.js](tools/registry.js)
+2. **Register the tool schema** in the `tools` array in [tools/registry.js](tools/registry.js)
+3. **Add role permissions** for the tool in [tools/permissions.js](tools/permissions.js)
+4. **Add the role to USERS** in [auth.js](auth.js) if needed
+5. Make sure the tool returns JSON-serializable data
+6. Write a clear description so the model knows when to use it
 
-### Example: Add a file listing tool with role checks
+### Step-by-step Example: Add a custom "clearCache" tool
 
-Edit [tools/registry.js](tools/registry.js) and add to the `toolsRegistry`:
+**Step 1:** Update [tools/permissions.js](tools/permissions.js) to allow admin access:
 
-```js
-const toolsRegistry = {
-  getSystemMetrics: async (args, user) => {
-    // This tool is available to all authenticated users
-    return { cpuUsage: 42, memoryUsage: "3.2GB / 16GB", status: "Healthy" };
+```javascript
+export const ROLE_PERMISSIONS = {
+  admin: {
+    tools: ['getSystemMetrics', 'restartService', 'clearCache'],  // ← Add here
+    description: 'Full access to all tools and operations',
   },
-
-  restartService: async (args, user) => {
-    // Only admin users can restart services
-    if (user.role !== 'admin') {
-      return {
-        error: `Permission Denied: User '${user.username}' (${user.role}) cannot restart services.`,
-      };
-    }
-    const serviceName = typeof args === "string" ? args : args?.serviceName;
-    return { service: serviceName, status: "restarted", timestamp: new Date().toISOString() };
-  },
-
-  listDirectory: async (args, user) => {
-    // Only allow certain roles to list directories
-    if (!['admin', 'developer'].includes(user.role)) {
-      return { error: 'Only admins and developers can list directories.' };
-    }
-    const dir = typeof args === "string" ? args : args?.dir || ".";
-    const fs = await import("fs/promises");
-    const files = await fs.readdir(dir);
-    return { directory: dir, files };
-  }
+  // ... other roles
 };
 ```
 
-Then add the schema to the `tools` array in [tools/registry.js](tools/registry.js) so Ollama can call it:
+**Step 2:** Add the tool implementation to [tools/registry.js](tools/registry.js):
 
-```js
-const tools = [
-  {
-    type: "function",
-    function: {
-      name: "listDirectory",
-      description: "List files in a given directory. Admin and developer roles only.",
-      parameters: {
-        type: "object",
-        properties: {
-          dir: {
-            type: "string",
-            description: "Directory path to inspect, for example '.' or './public'."
-          }
-        },
-        required: ["dir"]
-      }
+```javascript
+import { hasToolPermission, createPermissionDeniedError } from './permissions.js';
+
+const toolsRegistry = {
+  // ... existing tools
+
+  clearCache: async (args, user) => {
+    // Check permissions using centralized permission system
+    if (!hasToolPermission(user.role, 'clearCache')) {
+      return createPermissionDeniedError(user.username, user.role, 'clearCache');
     }
-  }
+
+    // Tool logic here
+    return {
+      status: 'success',
+      message: 'Cache cleared',
+      timestamp: new Date().toISOString(),
+    };
+  },
+};
+```
+
+**Step 3:** Register the tool schema in [tools/registry.js](tools/registry.js):
+
+```javascript
+const tools = [
+  // ... existing tools
+  
+  {
+    type: 'function',
+    function: {
+      name: 'clearCache',
+      description: 'Clear application cache. Admin only.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
 ];
 ```
 
@@ -437,12 +496,13 @@ const tools = [
 
 - Keep each tool focused on a single responsibility
 - Accept simple, well-defined arguments
-- **Always perform role-based checks** before executing sensitive operations
+- **Always check permissions** using `hasToolPermission()` - never hardcode role checks
+- **Use helper functions** from `tools/permissions.js` for consistent error messages
+- **Define permissions centrally** in [tools/permissions.js](tools/permissions.js) - don't scatter them in tool code
 - **Return structured JSON data**, including error messages for unauthorized access
 - Validate input before performing any action
 - Avoid risky operations unless they are intentional and clearly documented
 - Write descriptions that clearly explain when the tool should be used and any role requirements
-- Use the `user` object passed to every tool to make authorization decisions
 
 This allows the model to decide when a tool is appropriate and helps keep the agent behavior predictable, safe, and secure.
 
