@@ -71,7 +71,7 @@ ollama pull llama3.2
 Clone the repository and install dependencies:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/TechSivaram/node-ai-agent
 cd node-ai-agent
 npm install
 ```
