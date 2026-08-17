@@ -94,6 +94,21 @@ app.post('/api/chat', authenticateToken, async (req, res) => {
   }
 });
 
+app.post("/api/rag/ingest-folder", authenticateToken, async (req, res) => {
+  const { folderPath } = req.body;
+
+  if (!folderPath) {
+    return res.status(400).json({ error: "folderPath parameter is required." });
+  }
+
+  try {
+    const result = await RAGModule.ingestDirectory(folderPath);
+    return res.json({ status: "success", chunksIngested: result.count });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\n🚀 Agent Web UI ready at http://localhost:${PORT}`);
 });

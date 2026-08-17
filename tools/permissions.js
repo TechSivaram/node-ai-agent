@@ -5,11 +5,11 @@
 
 export const ROLE_PERMISSIONS = {
   admin: {
-    tools: ['getSystemMetrics', 'restartService'],
+    tools: ['getSystemMetrics', 'restartService','searchKnowledgeBase'],
     description: 'Full access to all tools and operations',
   },
   user: {
-    tools: ['getSystemMetrics'],
+    tools: ['getSystemMetrics','searchKnowledgeBase'],
     description: 'Read-only access to system metrics',
   },
   developer: {
@@ -17,7 +17,7 @@ export const ROLE_PERMISSIONS = {
     description: 'Access to system metrics and file browsing',
   },
   viewer: {
-    tools: ['getSystemMetrics'],
+    tools: ['getSystemMetrics','searchKnowledgeBase'],
     description: 'Limited read-only access',
   },
 };

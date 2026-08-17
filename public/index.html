@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -84,8 +85,8 @@
     }
 
     /* CHAT CONSOLE - Hidden until login succeeds */
-    #chat-view { 
-      display: none; 
+    #chat-view {
+      display: none;
     }
 
     .header-container {
@@ -138,20 +139,90 @@
       font-size: 0.95rem;
     }
 
-    .user { background: var(--user-msg); align-self: flex-end; color: white; white-space: pre-wrap; }
-    .agent { background: var(--agent-msg); border: 1px solid var(--border-color); align-self: flex-start; color: #e2e8f0; width: 90%; }
-    .action { background: #451a03; color: #fef08a; font-family: monospace; font-size: 0.85em; align-self: flex-start; }
-    .action-output { background: #064e3b; color: #a7f3d0; font-family: monospace; font-size: 0.85em; align-self: flex-start; }
-    .error { background: #7f1d1d; color: #fecaca; align-self: flex-start; }
+    .msg.action-rag {
+      background: #1e1b4b;
+      color: #c7d2fe;
+      border: 1px solid #4338ca;
+      font-family: monospace;
+      font-size: 0.85em;
+      align-self: flex-start;
+    }
 
-    .markdown-body p { margin: 0 0 12px 0; }
-    .markdown-body pre { background: #090d16 !important; padding: 14px; border-radius: 8px; overflow-x: auto; }
+    .user {
+      background: var(--user-msg);
+      align-self: flex-end;
+      color: white;
+      white-space: pre-wrap;
+    }
 
-    .input-box { display: flex; gap: 10px; margin-top: 20px; }
-    .input-box input { flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--chat-bg); color: white; }
-    .btn-send { padding: 12px 24px; background: var(--user-msg); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .agent {
+      background: var(--agent-msg);
+      border: 1px solid var(--border-color);
+      align-self: flex-start;
+      color: #e2e8f0;
+      width: 90%;
+    }
+
+    .action {
+      background: #451a03;
+      color: #fef08a;
+      font-family: monospace;
+      font-size: 0.85em;
+      align-self: flex-start;
+    }
+
+    .action-output {
+      background: #064e3b;
+      color: #a7f3d0;
+      font-family: monospace;
+      font-size: 0.85em;
+      align-self: flex-start;
+    }
+
+    .error {
+      background: #7f1d1d;
+      color: #fecaca;
+      align-self: flex-start;
+    }
+
+    .markdown-body p {
+      margin: 0 0 12px 0;
+    }
+
+    .markdown-body pre {
+      background: #090d16 !important;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .input-box input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--chat-bg);
+      color: white;
+    }
+
+    .btn-send {
+      padding: 12px 24px;
+      background: var(--user-msg);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
   </style>
 </head>
+
 <body>
 
   <!-- 1. LOGIN SCREEN -->
@@ -185,7 +256,8 @@
     <div id="chat"></div>
 
     <div class="input-box">
-      <input type="text" id="prompt" placeholder="Ask a question or request an action..." onkeydown="if(event.key === 'Enter') sendPrompt()" />
+      <input type="text" id="prompt" placeholder="Ask a question or request an action..."
+        onkeydown="if(event.key === 'Enter') sendPrompt()" />
       <button class="btn-send" onclick="sendPrompt()">Send</button>
     </div>
   </div>
@@ -293,7 +365,7 @@
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -319,7 +391,10 @@
             const { type, payload } = JSON.parse(chunk.replace('data: ', ''));
 
             if (type === 'action') {
-              chat.innerHTML += `<div class="msg action">⚙️ ${escapeHtml(payload)}</div>`;
+              const isRag = payload.includes('searchKnowledgeBase');
+              const cssClass = isRag ? 'msg action-rag' : 'msg action';
+              const icon = isRag ? '🔍' : '⚙️';
+              chat.innerHTML += `<div class="${cssClass}">${icon} ${escapeHtml(payload)}</div>`;
             } else if (type === 'action_output') {
               chat.innerHTML += `<div class="msg action-output">📦 ${escapeHtml(payload)}</div>`;
             } else if (type === 'message') {
@@ -352,4 +427,5 @@
     }
   </script>
 </body>
+
 </html>

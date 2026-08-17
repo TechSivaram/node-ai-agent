@@ -248,9 +248,46 @@ node-ai-agent/
 │   ├── image-1.png
 │   ├── image-2.png
 │   └── image.png
+├── rag/                  📚 RAG Module (see rag/README.md)
+│   ├── index.js
+│   ├── chain.js
+│   ├── config.js
+│   ├── vectorStore.js
+│   ├── ingest.js
+│   ├── loaders.js
+│   ├── README.md         ← Hybrid search documentation
+│   └── data/
 ├── package.json
 └── README.md
 ```
+
+## 📚 Modules
+
+### RAG Module (Retrieval-Augmented Generation)
+
+This project includes a **local RAG module** that enables hybrid search using vector embeddings + BM25 keyword matching via Reciprocal Rank Fusion.
+
+**[👉 View RAG Module Documentation](rag/README.md)**
+
+The RAG module features:
+- **Hybrid Search**: Combines semantic + keyword-based retrieval
+- **Local LLM**: Powered by Ollama (llama3.2)
+- **Vector Database**: LanceDB for fast similarity search
+- **Document Ingestion**: Supports PDF, TXT, and Markdown files
+- **RRF Ranking**: Intelligent result merging for optimal relevance
+
+Quick start:
+```bash
+# Ingest documents
+node rag/ingest.js ./rag/data
+
+# Query with hybrid search (in your code)
+import { RAGModule } from './rag/index.js';
+const docs = await loadAndSplitDirectory('./rag/data');
+const answer = await RAGModule.query('Your question', docs);
+```
+
+See [rag/README.md](rag/README.md) for detailed configuration, API documentation, and troubleshooting.
 
 ## 🏗️ Architecture Overview
 

@@ -35,3 +35,12 @@ build/
 # Logs
 logs/
 *.log
+
+---
+
+### `.gitignore` Update
+
+Add LanceDB data storage to your `.gitignore`:
+
+```text
+rag/data/
