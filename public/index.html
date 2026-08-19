@@ -272,7 +272,6 @@
 
     // Check token on initial load
     document.addEventListener('DOMContentLoaded', () => {
-      debugger;
       const token = localStorage.getItem('auth_token');
       if (token) {
         showChatInterface();
